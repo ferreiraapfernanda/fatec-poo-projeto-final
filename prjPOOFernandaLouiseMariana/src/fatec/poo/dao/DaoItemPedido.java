@@ -3,6 +3,7 @@ package fatec.poo.dao;
 import fatec.poo.model.ItemPedido;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
@@ -24,6 +25,18 @@ public class DaoItemPedido {
             ps.setInt(1, item.getPedido().getNumero());
             ps.setInt(2, item.getProduto().getCodigo());
             ps.setInt(3, item.getQtdeVendida());
+
+            ps.execute();
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+        }
+    }
+        
+    public void excluir(ItemPedido item){
+        PreparedStatement ps = null;
+        try {
+            ps = conn.prepareStatement("DELETE FROM POO_ITEM_PEDIDO WHERE NUMERO_PEDIDO = ?");
+            ps.setInt(1, item.getPedido().getNumero());
 
             ps.execute();
         } catch (SQLException ex) {

@@ -1,13 +1,14 @@
 package fatec.poo.dao;
 
 import fatec.poo.model.Cliente;
+import fatec.poo.model.ItemPedido;
 import fatec.poo.model.Pedido;
+import fatec.poo.model.Produto;
 import fatec.poo.model.Vendedor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -25,33 +26,60 @@ public class DaoPedido {
         DaoCliente daoCliente = new DaoCliente(conn);
         DaoVendedor daoVendedor = new DaoVendedor(conn);
 
-        Pedido p = null;
+        Pedido pedido = null;
+        ItemPedido itempedido = null;
+        Produto produto = null;
 
-        PreparedStatement ps = null;
+        PreparedStatement psPedido, psItem, psProduto = null;
         try {
-            ps = conn.prepareStatement("SELECT * from POO_PEDIDO where "
+            psPedido = conn.prepareStatement("SELECT * from POO_PEDIDO where "
                     + "NUMERO = ?");
 
-            ps.setInt(1, num);
-            ResultSet rs = ps.executeQuery();
+            psPedido.setInt(1, num);
+            ResultSet rsPedido = psPedido.executeQuery();
 
-            if (rs.next() == true) {
+            if (rsPedido.next() == true) {
                 //RE-CRIANDO OS OBJETOS DE CLIENTE E VENDEDOR DO PEDIDO, A PARTIR DOS DADOS DO BANCO
-                Cliente c = daoCliente.consultar(rs.getString("CPF_CLIENTE"));
-                Vendedor v = daoVendedor.consultar(rs.getString("CPF_VENDEDOR"));
+                Cliente c = daoCliente.consultar(rsPedido.getString("CPF_CLIENTE"));
+                Vendedor v = daoVendedor.consultar(rsPedido.getString("CPF_VENDEDOR"));
 
                 //RE-CRIANDO O OBJETO PEDIDO
-                p = new Pedido(num, rs.getString("DATA_PEDIDO"));
-                p.setCliente(c);
-                p.setVendedor(v);
-                p.setStatus(rs.getBoolean("STATUS"));
-                p.setDataPagto(rs.getString("DATA_PAGTO"));
+                pedido = new Pedido(num, rsPedido.getString("DATA_PEDIDO"));
+                pedido.setCliente(c);
+                pedido.setVendedor(v);
+                pedido.setStatus(rsPedido.getBoolean("STATUS"));
+                pedido.setDataPagto(rsPedido.getString("DATA_PAGTO"));
 
+                //RE-CRIANDO OS ITENS DO PEDIDO, DE ACORDO COM OS VALORES DO SEU PRODUTO
+                psItem = conn.prepareStatement("SELECT * FROM POO_ITEM_PEDIDO WHERE NUMERO_PEDIDO = ?");
+                psItem.setInt(1, pedido.getNumero());
+                ResultSet rsItem = psItem.executeQuery();
+
+                while (rsItem.next() == true) {
+                    psProduto = conn.prepareStatement("SELECT * from POO_PRODUTO where "
+                            + "COD_PRODUTO = ?");
+
+                    psProduto.setInt(1, rsItem.getInt("CODIGO_PRODUTO"));
+                    ResultSet rsProduto = psProduto.executeQuery();
+
+                    if (rsProduto.next() == true) {
+                        produto = new Produto(rsItem.getInt("CODIGO_PRODUTO"), rsProduto.getString("DESCRICAO"));
+                        produto.setQtdeDisponivel(rsProduto.getInt("QTDE_DISPONIVEL"));
+                        produto.setPrecoUnit(rsProduto.getDouble("PRECO_UNIT"));
+                        produto.setEstoqueMin(rsProduto.getInt("ESTOQUE_MINIMO"));
+
+                    }
+                    itempedido = new ItemPedido(rsItem.getInt("CODIGO_PRODUTO"), rsItem.getInt("QTD_VENDIDA"));
+                    itempedido.setProduto(produto);
+                    itempedido.setPedido(pedido);
+
+                    pedido.getItensPedidos().add(itempedido);
+                }
             }
         } catch (SQLException ex) {
             System.out.println(ex.toString());
         }
-        return (p);
+        return (pedido);
     }
 
     public void inserir(Pedido pedido) {
@@ -80,46 +108,125 @@ public class DaoPedido {
         }
     }
 
-    /* tô testando fazer esse codigo aqui mas não sei como chamar no GUI ;-;
-     public DefaultTableModel getItensPedido(Integer numPedido) throws Exception {
-     PreparedStatement ps = null;
+    public void alterar(Pedido pedido) {
+        PreparedStatement psItemBanco = null;
+        PreparedStatement psQtdItem = null;
+        try {
+            psItemBanco = conn.prepareStatement("SELECT * FROM POO_ITEM_PEDIDO WHERE NUMERO_PEDIDO = ?");
+            psItemBanco.setInt(1, pedido.getNumero());
+            ResultSet rsItemBanco = psItemBanco.executeQuery();
+            Boolean flag = false;
+            Boolean flagAchou = false;
 
-     DefaultTableModel dtm = new DefaultTableModel() {
-     public boolean isCellEditable(int row, int column) {
-     return false;
-     }
-     };
-        
-     String sql = "SELECT * from POO_ITEM_PEDIDO where NUMERO_PEDIDO = " + numPedido;
+            //COMPARAÇÃO BANCO/OBJETO
+            while (rsItemBanco.next()) {
+                flag = false;
+                flagAchou = false;
+                for (int x = 0; x < pedido.getItensPedidos().size(); x++) {
+                    if (pedido.getItensPedidos().get(x).getProduto().getCodigo() == rsItemBanco.getInt("CODIGO_PRODUTO")) {
+                        //OBJETO EXISTE NO BANCO E NO OBJETO
+                        flagAchou = true;
 
-     ps = conn.prepareStatement(sql);
-     ResultSet rs = ps.executeQuery();
+                        if (pedido.getItensPedidos().get(x).getQtdeVendida() != rsItemBanco.getInt("QTD_VENDIDA")) {
+                            //OBJETO TEVE SUA QUANTIDADE VENDIDA ATUALIZADA
+                            flag = true;
+                            psQtdItem = conn.prepareStatement("UPDATE POO_ITEM_PEDIDO SET QTD_VENDIDA = ? WHERE NUMERO_PEDIDO = ? AND CODIGO_PRODUTO = ?");
+                            psQtdItem.setInt(1, pedido.getItensPedidos().get(x).getQtdeVendida());
+                            psQtdItem.setInt(2, pedido.getNumero());
+                            psQtdItem.setInt(3, pedido.getItensPedidos().get(x).getProduto().getCodigo());
+                            psQtdItem.executeQuery();
+                        }
+                    }
+                }
+                if (flag == false && flagAchou == false) {
+                    //SE O ITEM NÃO EXISTE NO OBJETO (POREM SE ENCONTRA NO BANCO) EXCLUIR DO BANCO
+                    psQtdItem = conn.prepareStatement("DELETE FROM POO_ITEM_PEDIDO WHERE NUMERO_PEDIDO = ? AND CODIGO_PRODUTO = ?");
+                    psQtdItem.setInt(1, pedido.getNumero());
+                    psQtdItem.setInt(2, rsItemBanco.getInt("CODIGO_PRODUTO"));
+                    psQtdItem.executeQuery();
+                }
+            }
 
-     //adiciona as colunas  
-     dtm.addColumn("Código");
-     dtm.addColumn("Descrição");
-     dtm.addColumn("Prec. Unit.");
-     dtm.addColumn("Qtde. Vend.");
-     dtm.addColumn("SubTotal");
+            rsItemBanco = psItemBanco.executeQuery();
 
-     String descricao;
-     Integer qtd_vend;
-     Double prec_unit, sub_total;
+            //COMPARAÇÃO OBJETO/BANCO
+            for (int x = 0; x < pedido.getItensPedidos().size(); x++) {
+                rsItemBanco = psItemBanco.executeQuery();
+                flag = false;
+                while (rsItemBanco.next()) {
+                    if (pedido.getItensPedidos().get(x).getProduto().getCodigo() == rsItemBanco.getInt("CODIGO_PRODUTO")) {
+                        //OBJETO EXISTE NO BANCO E NO OBJETO
+                        flag = true;
+                    }
+                }
+                if (flag == false) {
+                    // OBJETO NÃO EXISTE NO BANCO
+                    psQtdItem = conn.prepareStatement("INSERT INTO POO_ITEM_PEDIDO VALUES(?, ?, ?)");
+                    psQtdItem.setInt(1, pedido.getNumero());
+                    psQtdItem.setInt(2, pedido.getItensPedidos().get(x).getProduto().getCodigo());
+                    psQtdItem.setInt(3, pedido.getItensPedidos().get(x).getQtdeVendida());
+                    psQtdItem.executeQuery();
+                }
+            }
 
-     Produto prod = null;
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+        }
 
-     while (rs.next()) { //pega os valores do bd para popular tabela  
+    }
 
-     prod = consultarProduto(Integer.parseInt(rs.getString("CODIGO_PRODUTO")));
-     descricao = prod.getDescricao();
-     prec_unit = prod.getPrecoUnit();
-     sub_total = prec_unit * Integer.parseInt(rs.getString("QTD_VENDIDA"));
+    public void atualizarLimite(Pedido pedido) {
+        PreparedStatement psNovoLimite = null;
+        try {
+            psNovoLimite = conn.prepareStatement("UPDATE POO_CLIENTE SET LIMITE_DISPONIVEL = ? WHERE CPF = ?");
+            psNovoLimite.setDouble(1, pedido.getCliente().getLimiteDisp());
+            psNovoLimite.setString(2, pedido.getCliente().getCpf());
+            psNovoLimite.executeQuery();
 
-     dtm.addRow(new String[]{rs.getString("CODIGO_PRODUTO"), descricao, prec_unit.toString(), rs.getString("QTD_VENDIDA"), sub_total.toString()});
-     }
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+        }
+    }
 
-     conn.close();
-     return dtm;
-     }
-     */
+    public void atualizarEst(Pedido pedido) {
+
+        PreparedStatement psNovoEstoque = null;
+        try {
+            for (int x = 0; x < pedido.getItensPedidos().size(); x++) {
+                psNovoEstoque = conn.prepareStatement("UPDATE POO_PRODUTO SET QTDE_DISPONIVEL = ? WHERE COD_PRODUTO = ?");
+                psNovoEstoque.setInt(1, pedido.getItensPedidos().get(x).getProduto().getQtdeDisponivel());
+                psNovoEstoque.setInt(2, pedido.getItensPedidos().get(x).getProduto().getCodigo());
+                psNovoEstoque.executeQuery();
+               
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+        }
+    }
+
+    public void excluir(Pedido pedido) {
+
+        DaoItemPedido daoItemPedido = new DaoItemPedido(conn);
+
+        PreparedStatement ps = null;
+        try {
+
+            Integer cont = 0;
+            while (cont < pedido.getItensPedidos().size()) {
+                daoItemPedido.excluir(pedido.getItensPedidos().get(cont));
+                cont++;
+            }
+
+            ps = conn.prepareStatement("DELETE FROM POO_PEDIDO WHERE NUMERO = ?");
+            ps.setInt(1, pedido.getNumero());
+
+            ps.execute();
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+        }
+
+    }
+
 }

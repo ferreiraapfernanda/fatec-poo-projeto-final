@@ -44,6 +44,5 @@ public class ItemPedido {
         
         quantidade = produto.getQtdeDisponivel() - qtdeVendida;
         produto.setQtdeDisponivel(quantidade);
-    }
-    
+    }   
 }

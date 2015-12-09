@@ -3,12 +3,13 @@ package fatec.poo.model;
 import java.util.ArrayList;
 
 public class Pedido {
-  private int numero;
-  private String dataEmissaoPedido, dataPagto;
-  private boolean status;
-  private Cliente cliente;
-  private Vendedor vendedor;
-  private ArrayList<ItemPedido> itensPedidos;
+
+    private int numero;
+    private String dataEmissaoPedido, dataPagto;
+    private boolean status;
+    private Cliente cliente;
+    private Vendedor vendedor;
+    private ArrayList<ItemPedido> itensPedidos;
 
     public Pedido(int numero, String dataEmissaoPedido) {
         this.numero = numero;
@@ -19,7 +20,7 @@ public class Pedido {
     public ArrayList<ItemPedido> getItensPedidos() {
         return itensPedidos;
     }
-  
+
     public String getDataPagto() {
         return dataPagto;
     }
@@ -51,17 +52,16 @@ public class Pedido {
     public void setVendedor(Vendedor vendedor) {
         this.vendedor = vendedor;
     }
-  
-    public void addItemPedido(ItemPedido ip){
+
+    public void addItemPedido(ItemPedido ip) {
         double limite;
-        
+
         itensPedidos.add(ip);
         ip.setPedido(this);
-        
-    //    limite = cliente.getLimiteDisp() - ip.getProduto().getPrecoUnit() * ip.getQtdeVendida();
-    //    cliente.setLimiteDisp(limite);
-        
-    //    ip.atualizaEstoque();
+
+        limite = cliente.getLimiteDisp() - ip.getProduto().getPrecoUnit() * ip.getQtdeVendida();
+        cliente.setLimiteDisp(limite);
+        ip.atualizaEstoque();
     }
 
     public Cliente getCliente() {
@@ -71,6 +71,14 @@ public class Pedido {
     public Vendedor getVendedor() {
         return vendedor;
     }
-  
-    
+
+    public void removerItemPedido(Integer item) {
+        double limite;
+
+        limite = cliente.getLimiteDisp() + itensPedidos.get(item).getProduto().getPrecoUnit() * itensPedidos.get(item).getQtdeVendida();
+        cliente.setLimiteDisp(limite);
+        itensPedidos.get(item).atualizaEstoque();
+        
+        itensPedidos.remove(itensPedidos.get(item));
+    }
 }

@@ -151,7 +151,7 @@ public class GUICliente extends javax.swing.JFrame {
 
         txtCEP.setEnabled(false);
 
-        lblLimiteDisponivel.setBorder(javax.swing.BorderFactory.createBevelBorder(1));
+        lblLimiteDisponivel.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
 
         cbxUF.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO" }));
         cbxUF.setEnabled(false);
@@ -450,7 +450,7 @@ public class GUICliente extends javax.swing.JFrame {
     }//GEN-LAST:event_btnIncluirActionPerformed
 
     private void btnExcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcluirActionPerformed
-        if (JOptionPane.showConfirmDialog(null, "Confirmar Alteração?") == 0) {
+        if (JOptionPane.showConfirmDialog(null, "Confirmar Exclusão?") == 0) {
             
             daoCliente.excluir(cliente);
             
@@ -536,9 +536,9 @@ public class GUICliente extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAlterarActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        conexao = new Conexao("IBD0020030481411027", "IBD0020030481411027");
+        conexao = new Conexao("system", "fernanda");
         conexao.setDriver("oracle.jdbc.driver.OracleDriver");
-        conexao.setConnectionString("jdbc:oracle:thin:@apolo:1521:xe");
+        conexao.setConnectionString("jdbc:oracle:thin:@localhost:1521:xe");
         daoCliente = new DaoCliente(conexao.conectar());
     }//GEN-LAST:event_formWindowOpened
 
