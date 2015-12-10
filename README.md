@@ -1,4 +1,5 @@
 # FATEC_POO_ProjetoFinal
+## Definições gerais (classes e métodos)
 Projeto para a disciplina de Programação Orientada a Objetos da Faculdade de Tecnologia de Sorocaba. Cadastros de Clientes, Vendedores, Produtos e Pedidos.
 
 O objetivo do projeto era que trabalhassemos com a arquitetura MVC com persistência de dados em um banco.
