@@ -1,4 +1,10 @@
 # FATEC - Programação Orientada a Objetos - Projeto Final
+
+## Colaboradoras: 
+* Louise Constantino [@LNazgul] (https://github.com/LNazgul)
+* Mariana Sabino [@metamorfomahga] (https://github.com/metamorfomahga)
+* Fernanda Aparecida [@fromnanda] (https://github.com/fromnanda)
+
 ## Definições gerais (classes e métodos)
 Projeto para a disciplina de Programação Orientada a Objetos da Faculdade de Tecnologia de Sorocaba (*FATEC Sorocaba*). 
 Aplicação para os **cadastros de Clientes, Vendedores, Produtos e Pedidos**. <br>
